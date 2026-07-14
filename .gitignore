@@ -1,0 +1,49 @@
+# --- wallflower gitignore ---
+
+# Captured / derived data (never commit participant traces or models) —
+# ignore the CONTENTS but keep the directory skeleton via .gitkeep.
+data/raw/*
+data/processed/*
+data/models/*
+data/reports/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/models/.gitkeep
+!data/reports/.gitkeep
+
+# Raw capture artefacts (wherever they land)
+*.raw
+*.pcap
+*.pcapng
+*.pcap.gz
+*.npz
+*.parquet
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtualenvs / tooling
+.venv/
+venv/
+.env
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+
+# live motion session logs
+data/reports/motion_logs/
+
+# Internal docs — not published
+docs/

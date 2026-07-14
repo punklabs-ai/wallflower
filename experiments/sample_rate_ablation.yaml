@@ -1,0 +1,59 @@
+# wallflower experiment: sample-rate ablation (paper Fig. 3)
+#
+# Reproduction of BFId (Todt, Morsbach, Strufe, CCS '25).
+#
+# Sweeps the number of packets retained per atomic sample by decimating each
+# sequence by integer subsample factors. The paper shows BFI identity accuracy
+# is ROBUST to lower effective sample rates (Fig. 3) — accuracy degrades only
+# mildly even at aggressive subsampling. Consumed by models/train.py &
+# evaluate.py, which run one train+eval per factor in `ablation.subsample_factors`.
+#
+# Subsampling semantics (applied by the dataset loader per factor f):
+#   keep every f-th timestep of x and dt (f=1 -> full rate, f=2 -> half, ...);
+#   dt is re-accumulated so the appended time-delta column stays physical.
+
+schema_version: "1.0"
+name: sample_rate_ablation
+description: >
+  Identity accuracy vs effective sample rate. Decimates BFI sequences by integer
+  factors and retrains/evaluates at each, demonstrating BFI robustness to low
+  packet rates (paper Fig. 3).
+
+modality: bfi
+
+data:
+  participants: null
+  styles: [normal]
+  perspectives: [1, 2, 3, 4]
+
+split:
+  train_frac: 0.8
+  seed: 1337
+  repeats: 5
+
+model:
+  hidden: 128
+  lstm_layers: 2
+  fc_hidden: 64
+  dropout: 0.2
+
+optim:
+  lr: 0.001
+  weight_decay: 0.0001
+  batch_size: 32
+  epochs: 60
+
+standardise: true
+
+metric: top1
+
+# Sweep grid. factor=1 is the full-rate baseline; larger factors keep fewer
+# packets/sample (lower effective Hz off contract.NOMINAL_RATE_HZ["bfi"]=10).
+ablation:
+  parameter: subsample_factor
+  subsample_factors: [1, 2, 3, 4, 6, 8, 10]
+
+paper_reference: "Todt et al., CCS '25 — Fig. 3 (sample-rate robustness)."
+expected_result: >
+  BFI top-1 stays high (near the ~99.5% baseline) and degrades only gradually as
+  the subsample factor grows; BFI is robust to reduced sample rate.

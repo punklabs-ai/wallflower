@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>wallflower · WiFi motion detector</title>
+  <link rel="stylesheet" href="/static/live_motion.css">
+</head>
+<body>
+  <div id="app">
+    <!-- top bar: brand · provenance · global state -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-name">WALLFLOWER</span>
+        <span class="brand-sub">WiFi Motion Detector</span>
+      </div>
+      <div class="provenance">
+        <div class="kv"><span class="k">Source</span><span class="v" id="pvSource">—</span></div>
+        <div class="kv"><span class="k">AP BSSID</span><span class="v mono" id="pvBssid">—</span></div>
+        <div class="kv"><span class="k">Monitor iface</span><span class="v mono" id="pvIface">—</span></div>
+        <div class="kv"><span class="k">Sample rate</span><span class="v mono" id="pvFs">—</span></div>
+      </div>
+      <div class="topstatus">
+        <span class="conn off" id="conn" title="stream status">●</span>
+        <span class="clock mono" id="clock">--:--:-- UTC</span>
+        <span class="tag" id="statusTag" data-state="idle">IDLE</span>
+      </div>
+    </header>
+
+    <div class="layout">
+      <main class="main">
+        <!-- main view: spectrogram OR motion bloom (toggle) -->
+        <section class="card">
+          <div class="card-head">
+            <h2 id="mainViewTitle">Spectrogram <span class="muted" style="font-weight:400">· frequency × time, newest at right</span></h2>
+            <div class="head-right">
+              <div class="seg" id="viewToggle">
+                <button class="seg-btn active" data-view="spectrogram">Spectrogram</button>
+                <button class="seg-btn" data-view="bloom">Bloom</button>
+              </div>
+              <div class="colorbar" id="colorbar">
+                <span>low</span><span class="cb-grad" id="cbGrad"></span><span>high energy</span>
+              </div>
+            </div>
+          </div>
+          <canvas id="hm" width="940" height="320"></canvas>
+          <canvas id="bloom" width="940" height="320" hidden></canvas>
+          <!-- bloom-view router selector: one entry per real router the backend reports -->
+          <div class="feedbar" id="feedbar" hidden></div>
+        </section>
+
+        <!-- motion energy trace -->
+        <section class="card">
+          <div class="card-head">
+            <h2>Motion Energy</h2>
+            <div class="legend">
+              <span><i class="ln ln-motion"></i>R1 motion</span>
+              <span><i class="ln ln-r2"></i>R2</span>
+              <span><i class="ln ln-r3"></i>R3</span>
+              <span><i class="ln ln-thr"></i>threshold</span>
+              <span><i class="ln ln-floor"></i>noise floor</span>
+            </div>
+          </div>
+          <canvas id="trace" width="940" height="150"></canvas>
+          <div class="cursor-readout" id="cursorReadout">Hover the charts to inspect any instant.</div>
+        </section>
+
+        <!-- live metrics -->
+        <section class="metrics" id="metrics"></section>
+
+        <!-- detection event log -->
+        <section class="card">
+          <div class="card-head">
+            <h2>Detections</h2>
+            <span class="muted" id="detCount">0 events</span>
+          </div>
+          <table class="evt">
+            <thead>
+              <tr>
+                <th>Start (UTC)</th><th>Duration</th><th>Peak</th>
+                <th>Threshold</th><th>Confidence</th><th>Label</th>
+              </tr>
+            </thead>
+            <tbody id="evtBody">
+              <tr class="empty"><td colspan="6">No detections recorded this session.</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </main>
+
+      <aside class="inspector">
+        <!-- contextual detail card (shown when a detection row is selected) -->
+        <section class="card detail" id="detailCard" hidden>
+          <div class="card-head">
+            <h2>Detection detail</h2>
+            <button class="btn-sub" id="detailClose">Close</button>
+          </div>
+          <dl id="detailBody"></dl>
+        </section>
+
+        <!-- detector parameters -->
+        <section class="card">
+          <div class="card-head">
+            <h2>Detector Parameters</h2>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="applied" id="appliedFlag">applied</span>
+              <button class="btn-sub" id="resetBtn">Reset</button>
+            </div>
+          </div>
+          <div id="paramForm"></div>
+          <div class="calib">
+            <button class="btn" id="recalibrateBtn">Recalibrate baseline</button>
+            <div class="muted" id="calibState">Awaiting first calibration…</div>
+          </div>
+        </section>
+
+        <!-- ground truth labelling -->
+        <section class="card">
+          <div class="card-head">
+            <h2>Ground Truth</h2>
+            <span class="tag tag-ghost" id="lblTag">unlabeled</span>
+          </div>
+          <div class="btn-row">
+            <button class="btn" id="stillBtn">Still <kbd>S</kbd></button>
+            <button class="btn" id="movingBtn">Moving <kbd>M</kbd></button>
+            <button class="btn" id="clearLabelBtn">Clear <kbd>C</kbd></button>
+          </div>
+        </section>
+
+        <!-- session logging -->
+        <section class="card">
+          <div class="card-head"><h2>Session Log</h2></div>
+          <button class="btn" id="logBtn">Enable logging</button>
+          <div class="muted mono" id="logPath">—</div>
+        </section>
+      </aside>
+    </div>
+  </div>
+  <script src="/static/live_motion.js"></script>
+</body>
+</html>

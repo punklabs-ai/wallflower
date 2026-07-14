@@ -1,0 +1,213 @@
+# wallflower node inventory (controller -> nodes mapping).
+#
+# This file carries TWO things:
+#   1. `topology.full`  : the logical inventory of the complete 4-perspective
+#                         deployment (placeholders — fill ssh host/user in real
+#                         multi-machine rollouts).
+#   2. profile `pilot`  : the ONE-NODE pilot where the single physical machine
+#                         (node1) plays every role and node-agents run LOCALLY
+#                         (host == localhost => no ssh).
+#
+# Each node entry:
+#   host       : ssh target host or "localhost" for local execution
+#   user       : ssh user (ignored for localhost)
+#   roles      : logical roles this node fulfils
+#   radios     : physical radio -> role mapping (mirrors contract.RadioRecord)
+#
+# Roles understood by the orchestrator:
+#   controller   -> session orchestration + (optionally) the trainer
+#   csi          -> nodes.csi_agent          (monitor-mode CSI capture, per perspective)
+#   bfi          -> nodes.bfi_client_agent   (associates to AP-BFI to elicit BFI sounding)
+#   bfi_recorder -> nodes.bfi_recorder_agent (single passive pcapng of BFI sounding)
+#   csi_traffic  -> nodes.traffic_agent      (iperf3 TCP/UDP traffic generators)
+
+# Active profile selected by the orchestrator (`--profile`).
+profile: pilot
+
+# --------------------------------------------------------------------------- #
+# 1. FULL 4-PERSPECTIVE TOPOLOGY (logical reference; placeholders for rollout)
+# --------------------------------------------------------------------------- #
+# Hardware blueprint: 2x BE800 APs (AP-CSI ch37, AP-BFI ch85, 6 GHz 160 MHz),
+# 4 perspective nodes each with 2x Intel AX210 (radioA=CSI/PicoScenes monitor,
+# radioB=BFI client), 1 CSI-traffic node, 1 passive BFI recorder, 1 controller.
+# The active pilot profile below is the operative 5 GHz/ch36 deployment.
+topology:
+  full:
+    controller:
+      host: controller.lab.local      # PLACEHOLDER
+      user: "[ADMIN ACCOUNT]"                  # PLACEHOLDER
+      roles: [controller]
+      # The trainer may run here or on a dedicated GPU box; see lab.yaml.
+
+    perspective1:
+      host: persp1.lab.local           # PLACEHOLDER
+      user: "[ADMIN ACCOUNT]"                  # PLACEHOLDER
+      roles: [csi, bfi]
+      radios:
+        - role: csi                    # radio A -> CSI monitor capture
+          iface: wlan0                 # PLACEHOLDER
+          phy: phy0                    # PLACEHOLDER
+          mac: "00:00:00:00:00:00"     # PLACEHOLDER
+          pci: ""                      # PLACEHOLDER
+          perspective: 1
+          ap: AP-CSI
+          channel: 37
+        - role: bfi                    # radio B -> BFI client / sounding
+          iface: wlan1                 # PLACEHOLDER
+          phy: phy1                    # PLACEHOLDER
+          mac: "00:00:00:00:00:01"     # PLACEHOLDER
+          pci: ""                      # PLACEHOLDER
+          perspective: 1
+          ap: AP-BFI
+          channel: 85
+
+    perspective2:
+      host: persp2.lab.local           # PLACEHOLDER
+      user: "[ADMIN ACCOUNT]"
+      roles: [csi, bfi]
+      radios:
+        - role: csi
+          iface: wlan0
+          phy: phy0
+          mac: "00:00:00:00:00:10"
+          pci: ""
+          perspective: 2
+          ap: AP-CSI
+          channel: 37
+        - role: bfi
+          iface: wlan1
+          phy: phy1
+          mac: "00:00:00:00:00:11"
+          pci: ""
+          perspective: 2
+          ap: AP-BFI
+          channel: 85
+
+    perspective3:
+      host: persp3.lab.local           # PLACEHOLDER
+      user: "[ADMIN ACCOUNT]"
+      roles: [csi, bfi]
+      radios:
+        - role: csi
+          iface: wlan0
+          phy: phy0
+          mac: "00:00:00:00:00:20"
+          pci: ""
+          perspective: 3
+          ap: AP-CSI
+          channel: 37
+        - role: bfi
+          iface: wlan1
+          phy: phy1
+          mac: "00:00:00:00:00:21"
+          pci: ""
+          perspective: 3
+          ap: AP-BFI
+          channel: 85
+
+    perspective4:
+      host: persp4.lab.local           # PLACEHOLDER
+      user: "[ADMIN ACCOUNT]"
+      roles: [csi, bfi]
+      radios:
+        - role: csi
+          iface: wlan0
+          phy: phy0
+          mac: "00:00:00:00:00:30"
+          pci: ""
+          perspective: 4
+          ap: AP-CSI
+          channel: 37
+        - role: bfi
+          iface: wlan1
+          phy: phy1
+          mac: "00:00:00:00:00:31"
+          pci: ""
+          perspective: 4
+          ap: AP-BFI
+          channel: 85
+
+    csi_traffic:
+      host: traffic.lab.local          # PLACEHOLDER
+      user: "[ADMIN ACCOUNT]"
+      roles: [csi_traffic]
+      # Generates iperf3 TCP (200 Mb/s, drives BFI) + UDP (30 Kb/s, CSI).
+
+    bfi_recorder:
+      host: recorder.lab.local         # PLACEHOLDER
+      user: "[ADMIN ACCOUNT]"
+      roles: [bfi_recorder]
+      radios:
+        - role: bfi_recorder           # single central passive capture (monitor)
+          iface: wlan0
+          phy: phy0
+          mac: "00:00:00:00:00:99"
+          pci: ""
+          ap: AP-BFI
+          channel: 85
+
+# --------------------------------------------------------------------------- #
+# 2. PILOT PROFILE — everything collapses onto node1 (this physical machine).
+#    Real node1 facts (PCI / iface / phy / MAC) per the deployment context.
+# --------------------------------------------------------------------------- #
+profiles:
+  pilot:
+    nodes:
+      node1:
+        host: localhost
+        user: "[ADMIN ACCOUNT]"
+        roles: [controller, csi, bfi, bfi_recorder, csi_traffic]
+        radios:
+          # SITE REALITY: one AP (LAB_AP), 5 GHz on ch36. wlp1s0 stays managed
+          # and associated as the BFI client; wlp2s0 is the passive monitor that
+          # actually sees the AP traffic on ch36.
+          - role: bfi_recorder
+            iface: wlp2s0
+            phy: phy2
+            mac: "AA:BB:CC:DD:EE:03"
+            pci: "02:00.0"
+            perspective: 1
+            ap: LAB_AP
+            channel: 36
+          - role: csi
+            iface: mon1
+            phy: phy1
+            mac: "AA:BB:CC:DD:EE:02"
+            pci: "01:00.0"
+            perspective: 1
+            ap: LAB_AP
+            channel: 36
+          # BFI client / beamformee is the existing managed interface.
+          - role: bfi
+            iface: wlp1s0
+            phy: phy1
+            mac: "AA:BB:CC:DD:EE:02"
+            pci: "01:00.0"
+            perspective: 1
+            ap: LAB_AP
+            channel: 36
+
+    # In pilot the controller, recorder and trainer are all localhost (node1).
+    controller_node: node1
+    bfi_recorder_node: node1
+    trainer_node: node1
+
+    # Perspective -> csi-capture node mapping. In a full 4-perspective rollout
+    # these are 4 distinct hosts; in pilot they collapse onto node1.
+    perspective_nodes:
+      1: node1
+      2: node1
+      3: node1
+      4: node1
+
+# SSH behaviour for non-local nodes (localhost runs without ssh).
+ssh:
+  user: "[ADMIN ACCOUNT]"
+  connect_timeout_s: 8
+  # BatchMode avoids interactive password hangs; node1 sudo still needs a
+  # password, so privileged ops PRINT the command instead of running it.
+  options:
+    - -o
+    - BatchMode=yes
+    - -o
+    - StrictHostKeyChecking=accept-new

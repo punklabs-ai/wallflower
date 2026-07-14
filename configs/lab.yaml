@@ -1,0 +1,89 @@
+# wallflower session/lab configuration (controller-side).
+#
+# Reproduction of BFId (Todt et al., CCS '25).
+
+data_root: data
+
+# Train/eval split (paper baseline 80/20). split_by="trial" keeps whole trials
+# together so the same walk never straddles train and eval (no leakage).
+split:
+  train_frac: 0.8
+  eval_frac: 0.2
+  split_by: trial
+  seed: 1337
+
+# Walking styles and back-and-forth repeat counts (contract.STYLE_REPEATS).
+# Mirrors contract; do not diverge.
+styles:
+  normal: 20
+  backpack: 10
+  crate: 10
+  fast: 10
+  turnstile: 10
+
+# Sample-rate targets (Hz) from contract.NOMINAL_RATE_HZ. Used as sanity bounds
+# by validate-session; real captures vary. tolerance_frac sets the warn margin.
+sample_rate_targets:
+  bfi: 10.0
+  csi: 285.0
+  tolerance_frac: 0.30
+
+# Active perspectives for a session. Pilot uses all 4 (collapsed onto node1).
+perspectives: [1, 2, 3, 4]
+
+# Default back-and-forth leg recorded by start-trial (forward | return).
+default_direction: forward
+
+# --- Clock synchronisation gate (clocks.py) ----------------------------------
+# start-trial ABORTS if any node's estimated offset exceeds max_offset_ms.
+# Preferred sources are tried in order; ssh-date diff is the graceful fallback.
+clock:
+  max_offset_ms: 50.0
+  prefer: [ptp, chrony, ntp, ssh_date]
+  # If true, a missing high-precision source (chrony/ptp) is a warning, not a
+  # hard failure (degrade gracefully using ssh date diff).
+  allow_degraded: true
+
+# --- Traffic profile (drives sounding) ---------------------------------------
+# Paper sec 5.1: iperf3 ~200 Mb/s TCP elicits BFI; ~30 Kb/s UDP for CSI.
+traffic:
+  bfi_tcp_mbps: 200
+  csi_udp_kbps: 30
+
+# --- RF (mirrors contract; do not diverge) -----------------------------------
+band_ghz: 5
+width_mhz: 80
+ap_channels:
+  AP-CSI: 36
+  AP-BFI: 36
+
+# --- Deployed AP (site reality) ----------------------------------------------
+# The paper used 2x BE800 (CSI ch37 + BFI ch85). On THIS site there is ONE
+# tri-band AP, "LAB_AP". Real capture currently uses its 5 GHz radio on
+# ch36/80 MHz; ch85 has no AP. The recorder's BSSID guard reads ap_bfi.bssid
+# below (required for any real capture).
+ap_bfi:
+  ssid: "LAB_AP"
+  bssid: "AA:BB:CC:DD:EE:F4"   # the 5 GHz BSSID (ch36, 80 MHz, open)
+  channel: 36
+  band_ghz: 5
+  width_mhz: 80
+  security: open
+ap_csi:
+  ssid: "LAB_AP"
+  bssid: "AA:BB:CC:DD:EE:F4"
+  channel: 36
+  band_ghz: 5
+  width_mhz: 80
+  security: open
+
+# SSH behaviour for non-local nodes.
+ssh:
+  user: "[ADMIN ACCOUNT]"
+  connect_timeout_s: 8
+  # Extra ssh options (BatchMode avoids interactive password hangs on nodes).
+  options:
+    - -o
+    - BatchMode=yes
+    - -o
+    - StrictHostKeyChecking=accept-new

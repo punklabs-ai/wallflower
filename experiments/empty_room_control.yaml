@@ -1,0 +1,64 @@
+# wallflower experiment: empty-room control (paper H7)
+#
+# Reproduction of BFId (Todt, Morsbach, Strufe, CCS '25).
+#
+# Negative control for hypothesis H7: a model trained on NORMAL WALKING is asked
+# to "identify" recordings made with NOBODY in the room. If the classifier had
+# truly learned per-person gait signatures (and not room/environment artefacts),
+# empty-room captures should NOT confidently map to any participant. The paper
+# reports ~2.34% top-2 accuracy here — i.e. near chance, confirming the signal is
+# person-borne. Consumed by models/train.py & evaluate.py.
+#
+# DATA REQUIREMENT: this control needs dedicated empty-room captures. They are
+# recorded with the SAME rig but no participant in the path and tagged so the
+# loader can separate them from walking samples. Tagging convention (pick the one
+# your capture pipeline uses; the runner accepts either):
+#   * style tag  : style == "empty_room"   (preferred; a non-identity style), OR
+#   * participant: a reserved label like "P000" / "EMPTY" used as the empty tag.
+# "empty room" means an unoccupied room, captured with the same rig.
+
+schema_version: "1.0"
+name: empty_room_control
+description: >
+  Train identity model on normal walking, then evaluate top-2 accuracy on
+  empty-room (no participant) recordings. Expected near-chance, confirming the
+  identity signal is person-borne (paper H7).
+
+modality: bfi
+
+data:
+  participants: null
+  # Train on normal walking; evaluate on the empty-room captures.
+  train_styles: [normal]
+  test_styles: [empty_room]
+  # If empty captures are tagged by participant instead of style, set:
+  #   empty_participant_tag: P000     # reserved empty/no-person label
+  empty_participant_tag: null
+  perspectives: [1, 2, 3, 4]
+
+split:
+  train_frac: 0.8          # split within normal walking for the trained model
+  seed: 1337
+  repeats: 5
+
+model:
+  hidden: 128
+  lstm_layers: 2
+  fc_hidden: 64
+  dropout: 0.2
+
+optim:
+  lr: 0.001
+  weight_decay: 0.0001
+  batch_size: 32
+  epochs: 60
+
+standardise: true
+
+# top-2 accuracy is the paper's control metric for this hypothesis (sec. 5.3).
+metric: top2
+
+paper_reference: "Todt et al., CCS '25 — hypothesis H7 (empty-room control, sec. 5.3)."
+expected_result: >
+  ~2.34% top-2 accuracy (near chance): empty-room recordings do not map to any
+  participant, confirming the learned signal is person-borne, not environmental.

@@ -1,0 +1,65 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wallflower"
+version = "0.1.0"
+description = "Reproduction scaffold of BFId (Todt, Morsbach, Strufe, CCS '25): a WiFi sensing lab for synchronised CSI+BFI walking-trace capture, parsing and baseline LSTM identity classification."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Punk Labs" }]
+keywords = ["wifi-sensing", "csi", "bfi", "beamforming-feedback", "research"]
+classifiers = [
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+]
+
+# Core stays minimal so node agents / orchestrator / capture run on bare nodes
+# (stdlib-first). Only pyyaml is needed to read the configs/ files.
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# Heavy ML stack: parsers + models only. Not needed on capture-only nodes.
+ml = [
+    "numpy>=1.26",
+    "torch>=2.2",
+    "pandas>=2.1",
+    "pyarrow>=14.0",
+    "scikit-learn>=1.4",
+    "optuna>=3.5",
+]
+# Packet/BFI parsing helpers. Capture itself prefers stdlib + tcpdump, but scapy
+# is used by the offline BFI pcapng parser.
+capture = [
+    "scapy>=2.5",
+]
+# Developer tooling.
+dev = [
+    "ruff>=0.4",
+    "pytest>=8.0",
+]
+
+[project.scripts]
+wallflower = "orchestrator.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["wallflower", "orchestrator", "nodes", "capture", "parsers", "models"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

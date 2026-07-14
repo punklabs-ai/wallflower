@@ -1,0 +1,60 @@
+# wallflower experiment: perspective ablation (paper Fig. 5/6)
+#
+# Reproduction of BFId (Todt, Morsbach, Strufe, CCS '25).
+#
+# Two regimes over the 4 capture perspectives (contract.PERSPECTIVES = 1..4):
+#   1. matched   : train AND test on the SAME single perspective (diagonal) —
+#                  per-perspective baselines (paper Fig. 5).
+#   2. cross      : train on perspective i, test on perspective j (i != j) —
+#                  the full cross-perspective mismatch matrix (paper Fig. 6).
+# Consumed by models/train.py & evaluate.py: the runner iterates the perspective
+# grid, training one model per train-perspective and scoring it on every
+# test-perspective when `ablation.cross_perspective` is true.
+
+schema_version: "1.0"
+name: perspective_ablation
+description: >
+  Per-perspective and cross-perspective identity accuracy on BFI normal walking.
+  Produces the diagonal (matched) baselines and the off-diagonal mismatch matrix
+  (paper Fig. 5/6).
+
+modality: bfi
+
+data:
+  participants: null
+  styles: [normal]
+  perspectives: [1, 2, 3, 4]
+
+split:
+  train_frac: 0.8
+  seed: 1337
+  repeats: 5
+
+model:
+  hidden: 128
+  lstm_layers: 2
+  fc_hidden: 64
+  dropout: 0.2
+
+optim:
+  lr: 0.001
+  weight_decay: 0.0001
+  batch_size: 32
+  epochs: 60
+
+standardise: true
+
+metric: top1
+
+# Perspective sweep. cross_perspective=true builds the full 4x4 train/test
+# matrix (matched diagonal + mismatched off-diagonal). Set false for the
+# matched-only diagonal (one model per perspective).
+ablation:
+  parameter: perspective
+  perspectives: [1, 2, 3, 4]
+  cross_perspective: true
+
+paper_reference: "Todt et al., CCS '25 — Fig. 5 (per-perspective) / Fig. 6 (cross-perspective)."
+expected_result: >
+  Matched (diagonal) perspectives reach near the headline accuracy; cross-perspective
+  (off-diagonal) mismatches degrade substantially, showing perspective dependence.

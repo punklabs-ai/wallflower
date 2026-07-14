@@ -1,0 +1,45 @@
+# wallflower experiment: CSI identity baseline
+#
+# Reproduction of BFId (Todt, Morsbach, Strufe, CCS '25).
+#
+# CSI counterpart to the BFI baseline: same pipeline/hyperparams family, but the
+# CSI modality (212 features) and its substantially weaker identity signal. The
+# paper reports CSI well below BFI from normal walking (~82.4%), motivating BFI
+# as the stronger side-channel. Consumed by models/train.py & evaluate.py.
+
+schema_version: "1.0"
+name: csi_identity_baseline
+description: >
+  Baseline identity classifier on CSI from normal walking, all perspectives
+  pooled. Contrast against bfi_identity_baseline.
+
+modality: csi
+
+data:
+  participants: null
+  styles: [normal]
+  perspectives: [1, 2, 3, 4]
+
+split:
+  train_frac: 0.8
+  seed: 1337
+  repeats: 5
+
+model:
+  hidden: 128
+  lstm_layers: 2
+  fc_hidden: 64
+  dropout: 0.2
+
+optim:
+  lr: 0.001
+  weight_decay: 0.0001
+  batch_size: 32
+  epochs: 60
+
+standardise: true
+
+metric: top1
+
+paper_reference: "Todt et al., CCS '25 — CSI vs BFI comparison (sec. 5.3)."
+expected_result: "CSI top-1 identity accuracy ~82.4% (normal walking)."

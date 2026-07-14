@@ -1,0 +1,43 @@
+# wallflower — Access Point / RF channel plan.
+#
+# Values mirror wallflower/contract.py (AP_CHANNELS, BAND_GHZ, WIDTH_MHZ). Do not
+# diverge — contract.py is the single source of truth.
+
+schema_version: "1.0"
+
+band_ghz: 5
+width_mhz: 80
+
+aps:
+  # AP that carries the CSI-driving traffic; the pilot uses the ASUS 5 GHz
+  # radio on channel 36.
+  AP-CSI:
+    channel: 36
+    band_ghz: 5
+    width_mhz: 80
+    model: "ASUS RT-AXE7800"
+    ssid: "LAB_AP"
+    bssid: "AA:BB:CC:DD:EE:F4"
+    psk_ref: "open lab network"
+
+  # AP whose beamforming sounding the passive recorder collects (BFI).
+  AP-BFI:
+    channel: 36
+    band_ghz: 5
+    width_mhz: 80
+    model: "ASUS RT-AXE7800"
+    ssid: "LAB_AP"
+    bssid: "AA:BB:CC:DD:EE:F4"
+    psk_ref: "open lab network"
+
+# Convenience role -> channel map (== contract.AP_CHANNELS).
+channels:
+  AP-CSI: 36
+  AP-BFI: 36
+
+notes: >
+  SSID/BSSID/PSK are placeholders; real credentials live in operator-held
+  secrets and are never committed. The
+  original BFId protocol (Todt et al., CCS '25) used 6 GHz / 160 MHz with
+  separate AP-CSI/AP-BFI channels. The operative pilot uses the ASUS
+  5 GHz radio on channel 36 for both roles.

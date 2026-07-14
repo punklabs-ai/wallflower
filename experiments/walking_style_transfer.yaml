@@ -1,0 +1,56 @@
+# wallflower experiment: walking-style transfer (paper Fig. 4)
+#
+# Reproduction of BFId (Todt, Morsbach, Strufe, CCS '25).
+#
+# Cross-style generalisation: TRAIN on normal walking only, then TEST (NO
+# retrain) on each perturbed style (backpack, crate, fast, turnstile). The paper
+# (Fig. 4) reports how much identity accuracy survives a gait/load change at
+# inference time. Consumed by models/train.py & evaluate.py.
+#
+# Schema note: this is a transfer config, so data filters are split into the
+# train-time and test-time style sets. The trainer fits the model + Standardiser
+# on `data.train_styles`; the evaluator scores it on each style in
+# `data.test_styles` separately (per-style breakdown via metrics.per_group_accuracy).
+
+schema_version: "1.0"
+name: walking_style_transfer
+description: >
+  Train on normal walking, evaluate (no retrain) on backpack/crate/fast/turnstile
+  to measure identity-signal transfer across gait/load perturbations (paper Fig. 4).
+
+modality: bfi
+
+data:
+  participants: null
+  perspectives: [1, 2, 3, 4]
+  # transfer-specific style split (consumed instead of a single `styles` list).
+  train_styles: [normal]
+  test_styles: [backpack, crate, fast, turnstile]
+
+split:
+  train_frac: 0.8          # split applied within the train_styles pool
+  seed: 1337
+  repeats: 5
+  # The label vocabulary is fixed from the train split; test samples reuse it so
+  # held-out styles map onto the trained participant classes (no retrain).
+
+model:
+  hidden: 128
+  lstm_layers: 2
+  fc_hidden: 64
+  dropout: 0.2
+
+optim:
+  lr: 0.001
+  weight_decay: 0.0001
+  batch_size: 32
+  epochs: 60
+
+standardise: true
+
+metric: top1
+
+paper_reference: "Todt et al., CCS '25 — Fig. 4 (cross-style transfer)."
+expected_result: >
+  Identity accuracy drops relative to the normal-on-normal baseline and varies by
+  style; reported per held-out style (backpack/crate/fast/turnstile).
